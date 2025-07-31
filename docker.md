@@ -686,3 +686,211 @@ docker image prune: remove imagens órfãs (sem tag, sem uso)
 
 **docker system prune**: limpa containers, imagens e volumes não utilizados
 
+| Característica   | `ARG`                           | `ENV`                               |
+| ---------------- | ------------------------------- | ----------------------------------- |
+| Visibilidade     | Só durante **build**            | Disponível em **build e runtime**   |
+| Escopo           | Só no momento do `docker build` | Acessível no `build` e no container |
+| Valor pode mudar | Sim, com `--build-arg`          | Sim, com `-e` no `docker run`       |
+| Exemplo de uso   | Versões, flags de build         | Variáveis de ambiente no app        |
+--------------------------------------------------------------------------------------------
+
+# Definindo versão do Node de forma flexível
+ARG NODE_VERSION=18
+FROM node:${NODE_VERSION}
+
+# ARG usado só durante o build
+ARG APP_VERSION=1.0.0
+
+# ENV persistirá no container em runtime
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Criar um diretório de trabalho
+WORKDIR /app
+
+# Copiar arquivos da app
+COPY . .
+
+# Instalar dependências
+RUN npm install
+
+# Mostrar a versão da app (usando ARG)
+RUN echo "Versão da aplicação: $APP_VERSION"
+
+# Criar usuário não-root por segurança
+RUN useradd --create-home --shell /bin/bash appuser
+
+# Alterar o dono dos arquivos (evita erro de permissão)
+RUN chown -R appuser /app
+
+# Trocar para o usuário comum
+USER appuser
+
+# Expõe a porta (opcional)
+EXPOSE ${PORT}
+
+# Comando final
+CMD ["npm", "start"]
+
+==================================================================
+
+# ✅ O que é o HEALTHCHECK?
+
+   O HEALTHCHECK é uma instrução no Dockerfile que permite monitorar a saúde do container em tempo de execução. Ele é muito útil para:
+
+     . Garantir que o container realmente está funcionando como deveria.
+
+     . Automatizar reinicializações em ferramentas como Docker Swarm ou Kubernetes.
+
+     . Diagnosticar rapidamente se um serviço parou de responder.
+
+
+------------------------------------------------------------------------------------------
+| Parâmetro        | Descrição                                                           |
+| ---------------- | ------------------------------------------------------------------- |
+| `--interval`     | Tempo entre verificações (ex: `10s`, `30s`)                         |
+| `--timeout`      | Tempo máximo que a verificação pode levar                           |
+| `--start-period` | Tempo de espera antes da primeira checagem (útil durante o startup) |
+| `--retries`      | Quantidade de tentativas antes de marcar como `unhealthy`           |
+------------------------------------------------------------------------------------------
+
+============================================================================================
+| Conceito           | Explicação rápida                                                    |
+| ------------------ | -------------------------------------------------------------------- |
+| `HEALTHCHECK`      | Verifica se a aplicação está de fato funcionando dentro do container |
+| `curl -f`          | Retorna erro se o status HTTP for diferente de 2xx                   |
+| `exit 1`           | Indica que o healthcheck falhou                                      |
+| `/health` endpoint | Verifica serviços críticos da aplicação                              |
+| `docker ps`        | Mostra se a aplicação está `healthy` ou `unhealthy`                  |
+
+==================================================================================
+
+# O que significa EXPOSE no Dockerfile?
+
+É uma instrução dentro do Dockerfile usada para documentar quais portas a aplicação dentro do container está ouvindo.
+
+🔸 Exemplo:
+EXPOSE 3001
+
+Isso indica que o container está preparado para escutar a porta 3001, mas não publica essa porta para o mundo externo automaticamente.
+
+# 🧠 Importante: EXPOSE ≠ expor de verdade
+Para realmente tornar a porta acessível externamente, você precisa usar:
+
+docker-compose.yml:
+
+ports:
+  - "3001:3001"
+
+ O que são VOLUMES no Dockerfile?
+
+**Um volume é uma forma de armazenar dados de forma persistente fora do container, mesmo que ele seja destruído.**
+
+🔸 Quando usar?
+      . Para guardar logs, bancos, uploads, cache, etc.
+
+      . Evitar perda de dados ao parar ou remover containers.
+
+
+
+🧹 Como limpar volumes inúteis:
+
+
+docker system prune --volumes
+
+
+# ✅ 1. Por que otimizar imagens Docker?
+
+# ✳️ Problemas com imagens grandes:
+Ocupam muito espaço em disco
+
+Demoram para fazer pull/push (subir ou baixar)
+
+São mais propensas a vulnerabilidades
+
+Lentidão em CI/CD, builds, deploys etc.
+
+# 🎯 Objetivo:
+Reduzir o tamanho da imagem sem quebrar o funcionamento da aplicação, e de preferência sem perder performance ou segurança.
+
+# 🧹 2. Comece com um .dockerignore bem feito
+
+✅ Solução:
+Crie um arquivo .dockerignore como este:
+
+node_modules
+.git
+npm-debug.log
+.DS_Store
+*.test.js
+coverage/
+
+
+🧱 3. Use imagens menores: Alpine ou Slim
+
+🏋️ Padrão:
+Imagens base como node:18 vêm com várias ferramentas e ocupam ~1 GB.
+
+🧊 Alpine:
+
+FROM node:18-alpine
+
+
+Extremamente leve (~50MB–100MB)
+
+Ideal para produção
+
+Poucas ferramentas instaladas
+
+Pode exigir ajustes (ex: comandos diferentes como adduser)
+
+
+🪶 Slim:
+
+FROM node:18-slim
+
+
+Meio termo: mais leve que a imagem padrão, mais completa que Alpine
+
+Inclui ferramentas básicas para debug/manutenção
+
+Ótima opção quando Alpine é leve demais para o que você precisa
+
+==============================================================
+
+| Imagem Base      | Tamanho aproximado | Observação                                     |
+| ---------------- | ------------------ | ---------------------------------------------- |
+| `node:18`        | \~1 GB             | Completa, mas pesada                           |
+| `node:18-slim`   | \~300 MB           | Boa redução, ferramentas básicas               |
+| `node:18-alpine` | \~60–100 MB        | Super leve, mas exige cuidado com libs nativas |
+------------------------------------------------------------------------------------------
+
+
+🧠 Antes de tudo: o que são CMD e ENTRYPOINT?
+CMD: Define o comando padrão que o container deve executar.
+
+ENTRYPOINT: Define o programa principal fixo que sempre será executado.
+
+Eles podem trabalhar juntos.
+
+## 1. Usando apenas CMD:
+
+CMD ["./server", "8080"]
+
+Quando você roda:
+
+docker run minha-imagem
+
+👉 Ele executa: ./server 8080
+
+🔐 Usando ENTRYPOINT fixo + CMD flexível
+
+ENTRYPOINT ["./server"]
+CMD ["8080"]
+
+
+Agora, quando você roda:
+
+docker run minha-imagem
+
+👉 Ele executa: ./server 8080
