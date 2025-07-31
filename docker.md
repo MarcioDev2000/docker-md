@@ -404,9 +404,10 @@ Se quiser criar um arquivo HTML dentro dela:
 
 ✅ Resumo do que está acontecendo:
 
-Resumo sobre Volumes no Docker
+
 ✅ Resumo do que está acontecendo:
-1. Comando resumido com -v:
+
+# 1. Comando resumido com -v:
 docker run -d -p 8080:80 -v $(pwd)/my_nginx_html:/usr/share/nginx/html nginx
 
 
@@ -414,57 +415,61 @@ Esse é o jeito mais curto e prático.
 O -v aceita tanto bind mounts quanto volumes, dependendo do que você escreve.
 É o mais usado no dia a dia.
 
-2. Comando mais detalhado com --mount:
-docker run -d -p 8080:80 \
+# 2. Comando mais detalhado com --mount:
+
+**docker run -d -p 8080:80 \
   --mount type=bind,source=$(pwd)/my_nginx_html,target=/usr/share/nginx/html \
-  nginx
+  nginx**
 
 Com ele, você consegue especificar:
 
-type=bind: É um bind mount (não volume do Docker).
-source=$(pwd)/my_nginx_html: A pasta do seu computador.
-target=/usr/share/nginx/html: Onde essa pasta vai aparecer dentro do container.
+**type=bind**: É um bind mount (não volume do Docker).
+**source=$(pwd)/my_nginx_html**: A pasta do seu computador.
+**target=/usr/share/nginx/html**: Onde essa pasta vai aparecer dentro do container.
 
 
 Quando já está dentro da pasta:
 docker run -d --rm -p 8080:80 \
   --mount type=bind,source=$(pwd),target=/usr/share/nginx/html \
-  nginx
+  nginx**
 
 
---mount: Forma mais moderna e clara de montar volumes.
+**--mount**: Forma mais moderna e clara de montar volumes.
 type=bind: Você está ligando uma pasta do host (seu computador) para dentro do container.
-source=$(pwd): Pega o caminho atual onde você está no terminal.
-target=/usr/share/nginx/html: Pasta padrão onde o Nginx procura os arquivos HTML.
+**source=$(pwd)**: Pega o caminho atual onde você está no terminal.
+**target=/usr/share/nginx/html**: Pasta padrão onde o Nginx procura os arquivos HTML.
 \: Quebra de linha (certifique-se de que não há texto colado nela, como no seu erro).
 
 
-O que são volumes no Docker?
+**O que são volumes no Docker?**
+
 Volumes são uma forma de armazenar dados persistentes usados e gerenciados pelo Docker. Ao contrário dos bind mounts, você não precisa saber onde os arquivos estão fisicamente no seu computador.
+
 Criar um volume:
-docker volume create my_volume
+**docker volume create my_volume**
 
 Listar volumes existentes:
-docker volume ls
+**docker volume ls**
 
 Inspecionar volume (ver onde ele fica):
-docker volume inspect my_volume
+**docker volume inspect my_volume**
 
-Obs: Mostra que ele está em algo como: /var/lib/docker/volumes/my_volume/_data
+Obs: Mostra que ele está em algo como: **/var/lib/docker/volumes/my_volume/_data**
+
 Remover volumes não utilizados:
-docker volume prune
+**docker volume prune**
 
 Remover um volume específico:
-docker volume rm my_volume
+**docker volume rm my_volume**
 
 
-✅ Agora, se quiser usar esse volume em um container Nginx:
+# ✅ Agora, se quiser usar esse volume em um container Nginx:
 🔸 Exemplo:
 docker run -d --rm -p 8080:80 \
   --mount type=volume,source=my_volume,target=/usr/share/nginx/html \
   nginx
 
-📌 Explicação:
+# 📌 Explicação:
 
 type=volume: Está dizendo que vai usar um volume (e não um bind mount).
 source=my_volume: Nome do volume que você criou.
@@ -523,10 +528,10 @@ Os containers Docker utilizam um sistema de arquivos em camadas, conhecido como 
 
 Introdução ao OverlayFS e Funcionamento das Camadas
 
-  .OverlayFS: É um sistema de arquivos unificador que permite sobrepor múltiplos sistemas de arquivos.
+  .**OverlayFS**: É um sistema de arquivos unificador que permite sobrepor múltiplos sistemas de arquivos.
 
-  .Camadas de Imagem: São camadas somente leitura que compõem a imagem Docker.
-  .Camada de Container: É a camada de leitura e escrita criada quando o container é iniciado.
+  .**Camadas de Imagem**: São camadas somente leitura que compõem a imagem Docker.
+  .**Camada de Container**: É a camada de leitura e escrita criada quando o container é iniciado.
 
 
 ## 2. Introdução à Persistência de Dados
@@ -535,9 +540,9 @@ Por que Precisamos Persistir Dados?
 
 Em muitos casos, precisamos que os dados sobrevivam além do ciclo de vida de um container. Por exemplo:
 
-.Bancos de dados que armazenam informações críticas.
-.Aplicações que geram logs importantes.
-.Sites que permitem uploads de arquivos.
+.**Bancos de dados que armazenam informações críticas**.
+.**Aplicações que geram logs importantes**.
+.**Sites que permitem uploads de arquivos**.
 
 
 Conceitos de Volumes e Bind Mounts no Docker
@@ -564,21 +569,21 @@ Backup de um Volume
 
 **docker run --rm -v my_volume:/data -v $(pwd):/backup busybox tar czf /backup/backup.tar.gz /data**
 
-docker run: Executa um novo container.
+**docker run**: Executa um novo container.
 
 -rm: Remove o container automaticamente ao final do processo.
 
-v my_volume:/data: Monta o volume my_volume no caminho /data dentro do container.
+**v my_volume:/data**: Monta o volume my_volume no caminho /data dentro do container.
 
 v $(pwd):/backup: Monta o diretório atual do host ($(pwd)) no caminho /backup dentro do 
 container.
 
-busybox: Uma imagem de contêiner leve usada para executar comandos Unix básicos.
+**busybox**: Uma imagem de contêiner leve usada para executar comandos Unix básicos.
 
 tar czf /backup/backup.tar.gz /data:
       .Cria um arquivo compactado backup.tar.gz com o conteúdo do volume my_volume e o armazena no diretório atual do host.
 
-Restauração de um Volume
+**Restauração de um Volume**
 
 docker run --rm -v my_volume:/data -v $(pwd):/backup busybox tar xzf /backup/backup.tar.gz -C /
 
