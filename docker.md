@@ -317,28 +317,367 @@ docker exec: Executa um novo processo dentro de um container em execução (ex.:
 docker attach: Anexa seu terminal ao processo principal do container (ex.: ver logs em tempo real).
 Resumo dos Comandos
 
-´´bash
 
 Executar um container:
 
   docker run [opções] imagem [comando]
 Listar containers:
 
-  docker ps        # Em execução
-  docker ps -a     # Todos
+  **docker ps**       # Em execução
+  **docker ps -a**     # Todos
 Parar, iniciar e remover containers:
 
-  docker stop <nome|id>
-  docker start <nome|id>
-  docker rm <nome|id>
-  docker rm -f <nome|id>   # Forçado
+  **docker stop <nome|id>**
+  **docker start <nome|id>**
+  **docker rm <nome|id>**
+  **docker rm -f <nome|id>**   # Forçado
 Executar comandos em containers:
 
-  docker exec -it <nome|id> <comando>
+  **docker exec -it <nome|id> <comando>**
 Acessar shell bash:
 
-  docker exec -it <nome|id> bash
+  **docker exec -it <nome|id>** bash
 Remover todos os containers:
 
-  docker rm $(docker ps -a -q)
-  docker rm -f $(docker ps -a -q)   # Incluindo em execução
+  **docker rm $(docker ps -a -q)**
+  **docker rm -f $(docker ps -a -q)**   # Incluindo em execução
+
+
+## 📦 Formas de persistência de dados em containers:
+Bind Mounts
+
+## Volumes
+
+## 🔁 Bind Mounts
+
+Mapeia uma pasta do host (sua máquina) para dentro do container.
+
+Alterações feitas no host aparecem no container em tempo real.
+
+Ideal para desenvolvimento, pois permite ver mudanças imediatamente.
+
+Pode gerar problemas de permissões e performance, especialmente em Mac/Windows.
+
+Performance já melhorada com tecnologias como VirtioFS e Mutagen (Docker Desktop).
+
+## 📂 Volumes
+Gerenciado pelo Docker, não é uma pasta visível no host.
+
+Usado para armazenamento persistente de dados (ex: bancos de dados).
+
+Mais seguro e estável, ideal para produção.
+
+Pode ser montado na nuvem (cloud storage) e acessado por containers.
+
+====================
+
+Crindo pasta no Ubuntu.
+
+**mkdir nome_da_pasta**
+
+Isso vai criar a pasta dentro do diretório atual (no caso, ~, que é sua home: /home/marcioabreu/).
+
+🔍 Verificar se a pasta foi criada:
+
+**ls**
+
+
+## 📁 Dica extra:
+Se quiser entrar na pasta depois de criá-la:
+
+**cd my_nginx_html**
+
+Se quiser criar um arquivo HTML dentro dela:
+
+**echo "<h1>Content updated</h1>" > index.html**
+
+✅ Basta usar o caminho atual com $(pwd):
+
+
+**docker run -d -p 8080:80 -v $(pwd):/usr/share/nginx/html nginx**
+
+
+🔍 Explicando:
+**$(pwd)** → retorna o caminho absoluto da pasta atual (/home/marcioabreu/trainer_nginx_html)
+
+**:/usr/share/nginx/html** → é o local padrão que o Nginx usa para servir páginas
+
+✅ Resumo do que está acontecendo:
+
+Resumo sobre Volumes no Docker
+✅ Resumo do que está acontecendo:
+1. Comando resumido com -v:
+docker run -d -p 8080:80 -v $(pwd)/my_nginx_html:/usr/share/nginx/html nginx
+
+
+Esse é o jeito mais curto e prático.
+O -v aceita tanto bind mounts quanto volumes, dependendo do que você escreve.
+É o mais usado no dia a dia.
+
+2. Comando mais detalhado com --mount:
+docker run -d -p 8080:80 \
+  --mount type=bind,source=$(pwd)/my_nginx_html,target=/usr/share/nginx/html \
+  nginx
+
+Com ele, você consegue especificar:
+
+type=bind: É um bind mount (não volume do Docker).
+source=$(pwd)/my_nginx_html: A pasta do seu computador.
+target=/usr/share/nginx/html: Onde essa pasta vai aparecer dentro do container.
+
+
+Quando já está dentro da pasta:
+docker run -d --rm -p 8080:80 \
+  --mount type=bind,source=$(pwd),target=/usr/share/nginx/html \
+  nginx
+
+
+--mount: Forma mais moderna e clara de montar volumes.
+type=bind: Você está ligando uma pasta do host (seu computador) para dentro do container.
+source=$(pwd): Pega o caminho atual onde você está no terminal.
+target=/usr/share/nginx/html: Pasta padrão onde o Nginx procura os arquivos HTML.
+\: Quebra de linha (certifique-se de que não há texto colado nela, como no seu erro).
+
+
+O que são volumes no Docker?
+Volumes são uma forma de armazenar dados persistentes usados e gerenciados pelo Docker. Ao contrário dos bind mounts, você não precisa saber onde os arquivos estão fisicamente no seu computador.
+Criar um volume:
+docker volume create my_volume
+
+Listar volumes existentes:
+docker volume ls
+
+Inspecionar volume (ver onde ele fica):
+docker volume inspect my_volume
+
+Obs: Mostra que ele está em algo como: /var/lib/docker/volumes/my_volume/_data
+Remover volumes não utilizados:
+docker volume prune
+
+Remover um volume específico:
+docker volume rm my_volume
+
+
+✅ Agora, se quiser usar esse volume em um container Nginx:
+🔸 Exemplo:
+docker run -d --rm -p 8080:80 \
+  --mount type=volume,source=my_volume,target=/usr/share/nginx/html \
+  nginx
+
+📌 Explicação:
+
+type=volume: Está dizendo que vai usar um volume (e não um bind mount).
+source=my_volume: Nome do volume que você criou.
+target=/usr/share/nginx/html: Pasta dentro do container Nginx onde o conteúdo será lido.
+
+
+Comandos úteis para volumes:
+
+**docker volume prune**
+Remove volumes anônimos não utilizados
+
+
+**docker volume rm <nome>**
+Remove um volume nomeado específico
+
+
+**docker volume ls**
+Lista todos os volumes (nomeados e anônimos)
+
+
+Adicionar um volume num container:
+**docker run -v my_volume:/usr/share/nginx/html nginx**
+
+
+## 📦 3. Backup de um Volume
+docker run --rm \
+  -v my_volume:/data \
+  -v $(pwd)/backup_host:/backup \
+  busybox \
+  tar czf /backup/backup.tar.gz -C /data .
+
+
+my_volume:/data: Monta o volume no container.
+$(pwd)/backup_host:/backup: Pasta local onde o backup será salvo.
+Cria backup.tar.gz com os dados do volume.
+
+## ♻️ 4. Restauração do Backup
+Inverte o processo: usa o mesmo volume e extrai os dados do .tar.gz.
+docker run --rm \
+  -v my_volume:/data \
+  -v $(pwd)/backup_host:/backup \
+  busybox \
+  tar xzf /backup/backup.tar.gz -C /data
+
+
+Extrai o backup dentro do volume montado em /data.
+
+
+## 1. Entendendo a Perda de Dados Após a Remoção do Container
+Por padrão, tudo o que acontece dentro de um container Docker é efêmero. Ao remover um container, todos os dados e alterações feitas dentro dele são perdidos. Isso é útil para manter a consistência e portabilidade, mas pode ser problemático quando precisamos persistir dados, como em bancos de dados ou aplicações que armazenam informações de usuários.
+
+Camadas de Leitura e Escrita nos Containers
+
+Os containers Docker utilizam um sistema de arquivos em camadas, conhecido como OverlayFS. Quando um container é iniciado a partir de uma imagem, o Docker cria uma camada de leitura e escrita sobre as camadas somente leitura da imagem. Todas as alterações feitas no container são gravadas nessa camada superior.
+
+
+Introdução ao OverlayFS e Funcionamento das Camadas
+
+  .OverlayFS: É um sistema de arquivos unificador que permite sobrepor múltiplos sistemas de arquivos.
+
+  .Camadas de Imagem: São camadas somente leitura que compõem a imagem Docker.
+  .Camada de Container: É a camada de leitura e escrita criada quando o container é iniciado.
+
+
+## 2. Introdução à Persistência de Dados
+
+Por que Precisamos Persistir Dados?
+
+Em muitos casos, precisamos que os dados sobrevivam além do ciclo de vida de um container. Por exemplo:
+
+.Bancos de dados que armazenam informações críticas.
+.Aplicações que geram logs importantes.
+.Sites que permitem uploads de arquivos.
+
+
+Conceitos de Volumes e Bind Mounts no Docker
+
+**Volumes**:
+
+  .Gerenciados pelo Docker.
+  .Armazenados em um local específico no sistema de arquivos do Docker.
+  .Podem ser locais ou remotos (usando drivers de volume).
+  .São a maneira recomendada para persistir dados em produção.
+
+**Bind Mounts**:
+
+  .Montam um diretório ou arquivo do sistema de arquivos do host no container.
+  .Oferecem mais flexibilidade durante o desenvolvimento.
+  .Dependem da estrutura do host, o que pode afetar a portabilidade.
+
+============================================================
+
+## 5. Backup e Restauração de Volumes
+Para garantir a persistência dos dados armazenados em volumes, é uma prática recomendada criar backups regulares, especialmente em ambientes de produção.
+
+Backup de um Volume
+
+**docker run --rm -v my_volume:/data -v $(pwd):/backup busybox tar czf /backup/backup.tar.gz /data**
+
+docker run: Executa um novo container.
+
+-rm: Remove o container automaticamente ao final do processo.
+
+v my_volume:/data: Monta o volume my_volume no caminho /data dentro do container.
+
+v $(pwd):/backup: Monta o diretório atual do host ($(pwd)) no caminho /backup dentro do 
+container.
+
+busybox: Uma imagem de contêiner leve usada para executar comandos Unix básicos.
+
+tar czf /backup/backup.tar.gz /data:
+      .Cria um arquivo compactado backup.tar.gz com o conteúdo do volume my_volume e o armazena no diretório atual do host.
+
+Restauração de um Volume
+
+docker run --rm -v my_volume:/data -v $(pwd):/backup busybox tar xzf /backup/backup.tar.gz -C /
+
+docker run: Executa um novo container.
+
+-rm: Remove o container automaticamente ao final do processo.
+
+v my_volume:/data: Monta o volume my_volume no caminho /data dentro do container.
+
+v $(pwd):/backup: Monta o diretório atual do host, onde o arquivo de backup está localizado.
+
+tar xzf /backup/backup.tar.gz -C /:
+   . Extrai o conteúdo de /backup/backup.tar.gz no diretório raiz do container.
+   . O arquivo backup.tar.gz inclui o caminho /data, que restaura os dados diretamente no volume my_volume.
+
+-------------------------
+
+
+## 📌 O que são Imagens Docker?
+São modelos prontos (templates) usados para criar containers.
+
+Contêm tudo o que o container precisa: sistema operacional, bibliotecas e a aplicação.
+
+Você já lidou com imagens ao rodar containers como nginx, busybox e rabbitmq.
+
+
+## 📁 Comando docker images
+Mostra todas as imagens baixadas na máquina.
+  Cada imagem tem:
+    .ID único
+    .Nome (repositório)
+    .Tag (versão)
+
+## 🏷️ A importância da Tag (versão)
+A tag indica a versão da imagem. Exemplo: 1.0, 1.1, latest.
+
+latest significa “última versão publicada”, mas pode mudar com o tempo.
+
+## ⚠️ Cuidados com latest
+    . Nunca use latest em produção. Ela pode mudar e quebrar sua aplicação.
+    . Sempre use uma versão fixa (ex: 1.0) em ambientes de produção.
+    . Em desenvolvimento, latest é aceitável por ser mais conveniente.
+
+## 📦 Tamanho das imagens
+Imagens menores são melhores:
+   .Menos espaço em disco
+   .Menor tempo de download/upload
+   .Menos componentes → menor risco de vulnerabilidades
+   .Evite instalar coisas desnecessárias como editores ou compiladores em imagens de produção.
+
+
+Para eliminar uma imagem usa o comando:
+    
+**docker rmi <nome-da-imagem-ou-ID>**
+
+Remove todas as imagens que não estão associadas a nenhum container:
+
+**docker image prune -a**
+
+📋 Remoção em massa de imagens
+Para remover todas as imagens listadas, use:
+
+bash
+Copy
+Edit
+docker rmi $(docker images -q)
+Para forçar:
+
+bash
+Copy
+Edit
+**docker rmi -f $(docker images -q)**
+
+=================================================================
+
+| Ação                              | Comando                          |
+| --------------------------------- | -------------------------------- |
+| Rodar container                   | `docker run nome:tag`            |
+| Listar containers                 | `docker ps` / `docker ps -a`     |
+| Remover container                 | `docker rm id-ou-nome`           |
+| Remover imagem                    | `docker rmi nome:tag`            |
+| Forçar remoção                    | `docker rmi -f nome:tag`         |
+| Inspecionar imagem                | `docker inspect nome-ou-id`      |
+| Buscar imagens                    | `docker search nome`             |
+| Baixar imagem (sem rodar)         | `docker pull nome:tag`           |
+| Limpar imagens "órfãs" (dangling) | `docker image prune`             |
+| Limpar todas não usadas           | `docker image prune -a`          |
+| Remover todas as imagens          | `docker rmi $(docker images -q)` |
+_______________________________________________________________________
+
+
+
+## 3. 🗑️ Limpeza de Imagens e Containers
+Para evitar acúmulo:
+docker image prune: remove imagens órfãs (sem tag, sem uso)
+
+**docker image prune -a**: remove todas as imagens que não estão sendo usadas
+
+**docker container prune**: remove containers parados
+
+**docker system prune**: limpa containers, imagens e volumes não utilizados
+
