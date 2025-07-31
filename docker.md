@@ -195,7 +195,6 @@ Containers ajudam a eliminar problemas entre ambiente de desenvolvimento e produ
 
 ## 1. Executando o Primeiro Container
 
-```bash
 **docker run hello-world**
 
 ## Resumo do capítulo
@@ -210,6 +209,7 @@ Para verificar se o Docker está instalado corretamente, execute:
 Este comando baixa a imagem hello-world (se ainda não estiver no seu sistema) e executa um container que exibe uma mensagem de confirmação.
 
 ## 2. Nomeando Containers e Entendendo Diferentes Execuções
+
 Executando um Container com um Nome Personalizado
 Por padrão, o Docker atribui nomes aleatórios aos containers. Você pode especificar um nome usando a flag --name:
 
@@ -239,12 +239,12 @@ Todos os containers (incluindo parados):
 
 Diferença: docker ps lista apenas os containers em execução, enquanto docker ps -a lista todos os containers existentes no sistema.
 
-Parando um Container
-docker stop mynginx
-Iniciando um Container Parado
-docker start mynginx
-Removendo um Container
-Remoção normal:
+-- Parando um Container
+-- docker stop mynginx
+-- Iniciando um Container Parado
+-- docker start mynginx
+-- Removendo um Container
+-- Remoção normal:
 
   **docker rm mynginx**
 
@@ -253,7 +253,7 @@ Remoção forçada (para containers em execução):
   **docker rm -f mynginx**
 Diferença: docker rm remove apenas containers parados. Para remover um container em execução, use docker rm -f.
 
-4. Attach e Detach
+## 4. Attach e Detach
 Conectando-se a um Container em Execução (docker attach)
 docker attach mynginx
 Este comando conecta seu terminal ao processo principal do container.
@@ -261,17 +261,18 @@ Este comando conecta seu terminal ao processo principal do container.
 Saindo do Container sem Parar (CTRL + P, CTRL + Q)
 Para sair do modo attach sem parar o container, pressione CTRL + P seguido de CTRL + Q.
 
-5. Executando Comandos e Removendo Containers Automaticamente
+## 5. Executando Comandos e Removendo Containers Automaticamente
 Executando Comandos em um Novo Container
 Você pode executar um comando diretamente em um novo container:
 
-docker run nginx ls -la
+**docker run nginx ls -la**
+
 Isto executa ls -la no container nginx e exibe o resultado no seu terminal.
 
 Entrando no Container com Bash
 Para acessar o shell bash dentro de um container:
 
-docker run -it nginx bash
+**docker run -it nginx bash**
 Isto inicia um container nginx e abre uma sessão interativa do bash.
 
 Diferença entre docker run e docker exec
@@ -279,38 +280,45 @@ docker run: Cria e inicia um novo container.
 docker exec: Executa um comando em um container já em execução.
 Exemplo com docker exec:
 
-docker exec -it mynginx bash
+**docker exec -it mynginx bash**
 Isto abre uma sessão bash em um container mynginx já em execução.
 
 Removendo Containers Automaticamente (-rm)
 Para remover automaticamente um container após sua execução:
 
-docker run --rm nginx ls -la
-6. Removendo Todos os Containers com Subcomandos
+**docker run --rm nginx ls -la**
+
+## 6. Removendo Todos os Containers com Subcomandos
 Para remover todos os containers parados:
 
-docker rm $(docker ps -a -q)
+**docker rm $(docker ps -a -q)**
+
 Explicação:
 docker ps -a -q lista todos os IDs de containers.
 $(...) insere essa lista no comando docker rm.
 Para remover todos os containers, incluindo os em execução, use:
 
-docker rm -f $(docker ps -a -q)
-7. Publicação de Portas
+**docker rm -f $(docker ps -a -q)**
+
+## 7. Publicação de Portas
 Para executar um servidor Nginx em um container e publicar a porta:
 
-docker run -d -p 8080:80 nginx
+**docker run -d -p 8080:80 nginx**
 Agora, o Nginx está acessível em http://localhost:8080.
 
-8. Execução Interativa e Acesso ao Shell
+## 8. Execução Interativa e Acesso ao Shell
 Acessando o Shell de um Container com docker exec -it
 Se você já tem um container em execução e deseja acessar seu shell:
 
-docker exec -it mynginx bash
+**docker exec -it mynginx bash**
+
 Diferença entre docker exec e docker attach
 docker exec: Executa um novo processo dentro de um container em execução (ex.: abrir uma nova sessão bash).
 docker attach: Anexa seu terminal ao processo principal do container (ex.: ver logs em tempo real).
 Resumo dos Comandos
+
+´´bash
+
 Executar um container:
 
   docker run [opções] imagem [comando]
